@@ -26,8 +26,8 @@ namespace Assets
         public float humidity = -1;
         public float temperature = -1;
         public float altitude = 0;
-        public Biomes biome = 0;
-        public Biomes baseBiome = 0;
+        public Biome biome = 0;
+        public Biome baseBiome = 0;
 
         private bool test = false;
 
@@ -238,27 +238,27 @@ namespace Assets
 
             if (humidity >= 0 && humidity <= 1)
             {
-                if(temperature >= 0 && temperature <= 1) biome = Biomes.Tundra; // tundra
-                else if (temperature > 1 && temperature <= 3) biome = Biomes.Dirt; // dirt
-                else if (temperature > 3 && temperature <= 4) biome = Biomes.Desert; // desert
+                if(temperature >= 0 && temperature <= 1) biome = Biome.Tundra; // tundra
+                else if (temperature > 1 && temperature <= 3) biome = Biome.Dirt; // dirt
+                else if (temperature > 3 && temperature <= 4) biome = Biome.Desert; // desert
             }
             else if (humidity > 1 && humidity <= 2)
             {
-                if (temperature >= 0 && temperature <= 1) biome = Biomes.Snow; // snow
-                else if (temperature >= 1 && temperature <= 2) biome = Biomes.Forest; // forest
-                else if (temperature > 2 && temperature <= 3) biome = Biomes.Plains; // planes
-                else if (temperature > 3 && temperature <= 4) biome = Biomes.Desert; // desert
+                if (temperature >= 0 && temperature <= 1) biome = Biome.Snow; // snow
+                else if (temperature >= 1 && temperature <= 2) biome = Biome.Forest; // forest
+                else if (temperature > 2 && temperature <= 3) biome = Biome.Plains; // planes
+                else if (temperature > 3 && temperature <= 4) biome = Biome.Desert; // desert
             }
             else if (humidity > 2 && humidity <= 3)
             {
-                if (temperature >= 0 && temperature <= 1) biome = Biomes.Snow; // snow
-                else if (temperature > 1 && temperature <= 3) biome = Biomes.Plains; // planes
-                else if (temperature > 3 && temperature <= 4) biome = Biomes.Jungle; // jungle
+                if (temperature >= 0 && temperature <= 1) biome = Biome.Snow; // snow
+                else if (temperature > 1 && temperature <= 3) biome = Biome.Plains; // planes
+                else if (temperature > 3 && temperature <= 4) biome = Biome.Jungle; // jungle
             }
             else if (humidity > 3 && humidity <= 4)
             {
-                if (temperature >= 0 && temperature <= 1) biome = Biomes.Glacier; // glacier
-                else if (temperature > 1 && temperature <= 4) biome = Biomes.Jungle; // sand
+                if (temperature >= 0 && temperature <= 1) biome = Biome.Glacier; // glacier
+                else if (temperature > 1 && temperature <= 4) biome = Biome.Jungle; // sand
             }
         }
 
@@ -271,27 +271,27 @@ namespace Assets
 
             if (humidity >= 0 && humidity <= 1)
             {
-                if (temperature >= 0 && temperature <= 1) baseBiome = Biomes.Tundra; // tundra
-                else if (temperature > 1 && temperature <= 3) baseBiome = Biomes.Dirt; // dirt
-                else if (temperature > 3 && temperature <= 4) baseBiome = Biomes.Desert; // desert
+                if (temperature >= 0 && temperature <= 1) baseBiome = Biome.Tundra; // tundra
+                else if (temperature > 1 && temperature <= 3) baseBiome = Biome.Dirt; // dirt
+                else if (temperature > 3 && temperature <= 4) baseBiome = Biome.Desert; // desert
             }
             else if (humidity > 1 && humidity <= 2)
             {
-                if (temperature >= 0 && temperature <= 1) baseBiome = Biomes.Snow; // snow
-                else if (temperature >= 1 && temperature <= 2) baseBiome = Biomes.Forest; // forest
-                else if (temperature > 2 && temperature <= 3) baseBiome = Biomes.Plains; // planes
-                else if (temperature > 3 && temperature <= 4) baseBiome = Biomes.Desert; // desert
+                if (temperature >= 0 && temperature <= 1) baseBiome = Biome.Snow; // snow
+                else if (temperature >= 1 && temperature <= 2) baseBiome = Biome.Forest; // forest
+                else if (temperature > 2 && temperature <= 3) baseBiome = Biome.Plains; // planes
+                else if (temperature > 3 && temperature <= 4) baseBiome = Biome.Desert; // desert
             }
             else if (humidity > 2 && humidity <= 3)
             {
-                if (temperature >= 0 && temperature <= 1) baseBiome = Biomes.Snow; // snow
-                else if (temperature > 1 && temperature <= 3) baseBiome = Biomes.Plains; // planes
-                else if (temperature > 3 && temperature <= 4) baseBiome = Biomes.Jungle; // jungle
+                if (temperature >= 0 && temperature <= 1) baseBiome = Biome.Snow; // snow
+                else if (temperature > 1 && temperature <= 3) baseBiome = Biome.Plains; // planes
+                else if (temperature > 3 && temperature <= 4) baseBiome = Biome.Jungle; // jungle
             }
             else if (humidity > 3 && humidity <= 4)
             {
-                if (temperature >= 0 && temperature <= 1) baseBiome = Biomes.Glacier; // glacier
-                else if (temperature > 1 && temperature <= 4) baseBiome = Biomes.Jungle; // sand
+                if (temperature >= 0 && temperature <= 1) baseBiome = Biome.Glacier; // glacier
+                else if (temperature > 1 && temperature <= 4) baseBiome = Biome.Jungle; // sand
             }
 
         }

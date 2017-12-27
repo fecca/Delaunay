@@ -1,6 +1,6 @@
 ﻿namespace Assets
 {
-	public enum Biomes
+	public enum Biome
 	{
 		Sand,
 		Glacier,

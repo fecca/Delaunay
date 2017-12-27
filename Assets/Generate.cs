@@ -1,14 +1,10 @@
 ﻿using System;
-using System.IO;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using Assets;
 using MIConvexHull;
 using UnityEngine.UI;
-using Biome = Assets.VoronoiTile.Biomes;
 using Random = UnityEngine.Random;
 
 public class Generate : MonoBehaviour
@@ -85,7 +81,7 @@ public class Generate : MonoBehaviour
 			Create();
 		}
 
-		//transform.Rotate(Vector3.up * Time.deltaTime * RotationSpeed, Space.World);
+		transform.Rotate(Vector3.up * Time.deltaTime * RotationSpeed, Space.World);
 		m_seconds -= Time.deltaTime;
 		if (m_seconds <= 0)
 		{
@@ -121,6 +117,11 @@ public class Generate : MonoBehaviour
 
 	public void Create()
 	{
+		if (!Application.isPlaying)
+		{
+			return;
+		}
+
 		ResetWorld();
 
 		var allVertices = GeneratePointsUniformly();
