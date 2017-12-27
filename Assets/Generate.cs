@@ -13,37 +13,32 @@ using Random = UnityEngine.Random;
 
 public class Generate : MonoBehaviour
 {
-	[SerializeField]
-	private Material planetMat;
-	[SerializeField]
-	private int layer;
+	public int Size = 5;
+	public int NumberOfCandidates = 10;
+
 	[SerializeField]
 	private Materials materials = new Materials();
 
-	private Text[] texts;
-	private Text actionText;
-	private Text toolText;
-	private GameObject topColdGizmo;
-	private GameObject botColdGizmo;
-	private GameObject topTempGizmo;
-	private GameObject botTempGizmo;
-	private GameObject topWarmGizmo;
-	private GameObject botWarmGizmo;
-	private List<Vertex3> convexHullVertices;
-	private List<Face3> convexHullFaces;
-	private List<int> convexHullIndices;
-	private List<Vector3> allVerts;
-	private List<Vector3> vertsForVoronoiHull;
-	private VoronoiMesh<Vertex3, Cell3, VoronoiEdge<Vertex3, Cell3>> voronoiMesh;
-	private List<Vector3> waterVerts;
-	private List<Vector3> landVerts;
-	private List<TectonicPlate> plateList;
-	private GameObject ocean;
-	private float seconds = 1f;
-	private double size = 5;
-	private int numberOfVertices;
-	private int numberOfTiles;
-	private bool oceanActive = true;
+	private List<Vector3> m_waterVerts;
+	private List<Vector3> m_landVerts;
+	private List<TectonicPlate> m_tectonicPlates;
+	private GameObject m_topColdGizmo;
+	private GameObject m_botColdGizmo;
+	private GameObject m_topTempGizmo;
+	private GameObject m_botTempGizmo;
+	private GameObject m_topWarmGizmo;
+	private GameObject m_botWarmGizmo;
+	private GameObject m_ocean;
+	private Text[] m_texts;
+	private InputField[] m_inputFields;
+	private InputField m_seedField;
+	private InputField m_platesField;
+	private InputField m_tilesField;
+	private bool m_oceanActive = true;
+	private float m_seconds = 1f;
+	private int m_numberOfVertices;
+	private int m_numberOfTiles;
+	private int m_layer;
 
 	public static Text biomeText;
 
@@ -51,9 +46,8 @@ public class Generate : MonoBehaviour
 	private int Seed { get; set; }
 	private int NumberOfVertices
 	{
-		get { return numberOfVertices; }
-		set { numberOfVertices = Convert.ToInt32(value); }
-
+		get { return m_numberOfVertices; }
+		set { m_numberOfVertices = Convert.ToInt32(value); }
 	}
 
 	public float LandAmount { get; set; }
@@ -65,7 +59,14 @@ public class Generate : MonoBehaviour
 
 	private void Start()
 	{
-		numberOfVertices = 200;
+		m_inputFields = FindObjectsOfType<InputField>();
+		m_seedField = m_inputFields[0];
+		m_platesField = m_inputFields[1];
+		m_tilesField = m_inputFields[2];
+		m_texts = FindObjectsOfType<Text>();
+		biomeText = m_texts[12];
+
+		m_numberOfVertices = 200;
 		Plates = 20;
 		RotationSpeed = 4;
 		HumidityModifier = 0;
@@ -75,316 +76,150 @@ public class Generate : MonoBehaviour
 		Seed = Random.Range(Int32.MinValue, Int32.MaxValue);
 		LandAmount = 4f;
 
-		texts = FindObjectsOfType<Text>();
-		biomeText = texts[12];
-
 		Create();
 	}
 	private void Update()
 	{
-		transform.Rotate(Vector3.up * Time.deltaTime * RotationSpeed, Space.World);
-		seconds -= Time.deltaTime;
-		if (seconds <= 0)
+		if (Input.GetKeyDown(KeyCode.Return))
 		{
-			Destroy(topWarmGizmo);
-			Destroy(botWarmGizmo);
-			Destroy(topColdGizmo);
-			Destroy(botColdGizmo);
-			Destroy(topTempGizmo);
-			Destroy(botTempGizmo);
+			Create();
+		}
+
+		//transform.Rotate(Vector3.up * Time.deltaTime * RotationSpeed, Space.World);
+		m_seconds -= Time.deltaTime;
+		if (m_seconds <= 0)
+		{
+			Destroy(m_topWarmGizmo);
+			Destroy(m_botWarmGizmo);
+			Destroy(m_topColdGizmo);
+			Destroy(m_botColdGizmo);
+			Destroy(m_topTempGizmo);
+			Destroy(m_botTempGizmo);
 		}
 	}
 	private void LateUpdate()
 	{
 		if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
 		{
-			if (layer == 0) DetermineHeightBiomes();
-			else if (layer == 1) SetMaterialToTemp();
-			else if (layer == 2) SetMaterialToHum();
+			if (m_layer == 0)
+			{
+				DetermineHeightBiomes();
+			}
+			else if (m_layer == 1)
+			{
+				SetMaterialToTemp();
+			}
+			else if (m_layer == 2)
+			{
+				SetMaterialToHum();
+			}
 		}
 	}
-
-	public void DrawColdLat()
+	private void OnDrawGizmos()
 	{
-		Destroy(topColdGizmo);
-		Destroy(botColdGizmo);
-
-		float h = Vector2.Distance(new Vector2(0, ColdLat), new Vector2(0, (float)size));
-		float a = Mathf.Sqrt(h * (2 * (float)size - h));
-
-		float h2 = Vector2.Distance(new Vector2(0, -ColdLat), new Vector2(0, (float)size));
-		float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
-
-		topColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		topColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
-		topColdGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
-		topColdGizmo.transform.position = new Vector3(0, ColdLat, 0);
-
-		botColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		botColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
-		botColdGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
-		botColdGizmo.transform.position = new Vector3(0, -ColdLat, 0);
-		seconds = 3f;
 	}
-	public void DrawTempLat()
-	{
-		Destroy(topTempGizmo);
-		Destroy(botTempGizmo);
 
-		float h = Vector2.Distance(new Vector2(0, TempLat), new Vector2(0, (float)size));
-		float a = Mathf.Sqrt(h * (2 * (float)size - h));
-
-		float h2 = Vector2.Distance(new Vector2(0, -TempLat), new Vector2(0, (float)size));
-		float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
-
-		topTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		topTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
-		topTempGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
-		topTempGizmo.transform.position = new Vector3(0, TempLat, 0);
-
-		botTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		botTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
-		botTempGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
-		botTempGizmo.transform.position = new Vector3(0, -TempLat, 0);
-		seconds = 3f;
-	}
-	public void DrawWarmLat()
-	{
-		Destroy(topWarmGizmo);
-		Destroy(botWarmGizmo);
-
-		float h = Vector2.Distance(new Vector2(0, WarmLat), new Vector2(0, (float)size));
-		float a = Mathf.Sqrt(h * (2 * (float)size - h));
-
-		float h2 = Vector2.Distance(new Vector2(0, -WarmLat), new Vector2(0, (float)size));
-		float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
-
-		topWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		topWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
-		topWarmGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
-		topWarmGizmo.transform.position = new Vector3(0, WarmLat, 0);
-
-		botWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		botWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
-		botWarmGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
-		botWarmGizmo.transform.position = new Vector3(0, -WarmLat, 0);
-		seconds = 3f;
-	}
 	public void Create()
 	{
-		foreach (Transform child in transform)
-		{
-			Destroy(child.gameObject);
-		}
+		ResetWorld();
 
-		InputField[] fields = FindObjectsOfType<InputField>();
-		InputField numseed = fields[0];
-		InputField numplates = fields[1];
-		InputField numtiles = fields[2];
-		numberOfVertices = Convert.ToInt32(numtiles.text);
-		Plates = Convert.ToInt32(numplates.text);
-		Seed = Convert.ToInt32(numseed.text);
+		var allVertices = GeneratePointsUniformly();
+		var voronoiVertices = GenerateVoronoiVertices(allVertices);
+		var voronoiMesh = VoronoiMesh.Create<Vertex3, Cell3>(voronoiVertices);
+		var voronoiHullVertices = GenerateVoronoiHullVertices(voronoiMesh);
+		var verticesDelaunay = GenerateDelaunayVertices(voronoiHullVertices);
+		var convexHull = ConvexHull.Create<Vertex3, Face3>(verticesDelaunay);
+		var convexHullVertices = new List<Vertex3>(convexHull.Points);
+		var convexHullFaces = new List<Face3>(convexHull.Faces);
+		var convexHullIndices = GenerateConvexHullIndices(convexHullFaces, convexHullVertices);
+		var normals = GenerateNormals(convexHullVertices, convexHullIndices);
+		var tiles = CreateTiles(normals);
 
-		// INITIALIZATION
-		Vertex3[] vertices = new Vertex3[numberOfVertices];
-		Vector3[] meshVerts = new Vector3[numberOfVertices];
-		allVerts = new List<Vector3>();
-		vertsForVoronoiHull = new List<Vector3>();
+		CreateWaterTiles(normals);
+		FindTileNeighbours(tiles);
 
-		// VORONOI VERTICES NEED ONE EXTRA ONE IN CENTER
-		Vertex3[] voronoiVertices = new Vertex3[numberOfVertices + 1];
+		var plateStartNodes = GeneratePlateStartNodes(Plates, tiles);
+		var plateMaterials = GenerateMaterials(1);
 
-		// RANDOM SEED
-		Random.InitState(Seed);
-
-		// GENERATE UNIFORM POINTS
-		allVerts = GeneratePointsUniformly();
-		allVerts.Sort((v1, v2) => v1.y.CompareTo(v2.y));
-
-		// SET INDICES FOR VORONOI
-		int i = 0;
-		while (i < numberOfVertices)
-		{
-			vertices[i] = new Vertex3(allVerts[i].x, allVerts[i].y, allVerts[i].z);
-			voronoiVertices[i] = vertices[i];
-			meshVerts[i] = vertices[i].ToVector3();
-			i++;
-		}
-		// SET LAST EXTRA VERTEX
-		voronoiVertices[numberOfVertices] = new Vertex3(0, 0, 0);
-
-		// VORONOI
-		voronoiMesh = VoronoiMesh.Create<Vertex3, Cell3>(voronoiVertices);
-
-		// VORONOI HULL GENERATION
-		int index = 0;
-		foreach (var edge in voronoiMesh.Edges)
-		{
-			Vector3 source = new Vector3(edge.Source.Circumcenter.x, edge.Source.Circumcenter.y, edge.Source.Circumcenter.z);
-			Vector3 target = new Vector3(edge.Target.Circumcenter.x, edge.Target.Circumcenter.y, edge.Target.Circumcenter.z);
-			source *= ((float)size / 2.5f);
-			target *= ((float)size / 2.5f);
-			vertsForVoronoiHull.Add(source);
-			vertsForVoronoiHull.Add(target);
-			index++;
-		}
-
-		// REMOVE DUPLICATE POINTS
-		vertsForVoronoiHull = vertsForVoronoiHull.Distinct().ToList();
-
-		// CONVERT FROM VECTOR3 LIST TO VERTEX3 LIST FOR FINAL HULL
-		Vertex3[] verticesDelaunay = new Vertex3[vertsForVoronoiHull.Count];
-
-		int g = 0;
-		while (g < vertsForVoronoiHull.Count)
-		{
-			verticesDelaunay[g] = new Vertex3(vertsForVoronoiHull[g].x, vertsForVoronoiHull[g].y, vertsForVoronoiHull[g].z);
-			g++;
-		}
-
-		// GENERATE VORONOI HULL
-		ConvexHull<Vertex3, Face3> convexHull = ConvexHull.Create<Vertex3, Face3>(verticesDelaunay);
-		convexHullVertices = new List<Vertex3>(convexHull.Points);
-		convexHullFaces = new List<Face3>(convexHull.Faces);
-		convexHullIndices = new List<int>();
-
-		foreach (Face3 f in convexHullFaces)
-		{
-			convexHullIndices.Add(convexHullVertices.IndexOf(f.Vertices[0]));
-			convexHullIndices.Add(convexHullVertices.IndexOf(f.Vertices[1]));
-			convexHullIndices.Add(convexHullVertices.IndexOf(f.Vertices[2]));
-		}
-
-		Dictionary<Vector3, List<Vector3>> normals = new Dictionary<Vector3, List<Vector3>>();
-
-		// CREATE TRIANGLES FOR MESH
-		for (int j = 0; j < convexHullIndices.Count; j += 3)
-		{
-			int v0 = convexHullIndices[j + 0];
-			int v1 = convexHullIndices[j + 1];
-			int v2 = convexHullIndices[j + 2];
-
-			Vector3 a = new Vector3((float)convexHullVertices[v0].x, (float)convexHullVertices[v0].y, (float)convexHullVertices[v0].z);
-			Vector3 b = new Vector3((float)convexHullVertices[v1].x, (float)convexHullVertices[v1].y, (float)convexHullVertices[v1].z);
-			Vector3 c = new Vector3((float)convexHullVertices[v2].x, (float)convexHullVertices[v2].y, (float)convexHullVertices[v2].z);
-
-			Vector3 normal = Vector3.Cross(a - b, a - c);
-
-			// DECLARE KEY AND ROUND IT TO AVOID FLOATING POINT ISSUES
-			Vector3 key = normal.normalized;
-			float roundX = Mathf.Round(key.x * 100) / 100;
-			float roundY = Mathf.Round(key.y * 100) / 100;
-			float roundZ = Mathf.Round(key.z * 100) / 100;
-			Vector3 roundedKey = new Vector3(roundX, roundY, roundZ);
-
-			// POPULATE DICTIONARY
-			if (!normals.ContainsKey(roundedKey))
-			{
-				normals.Add(roundedKey, new List<Vector3>());
-			}
-			normals[roundedKey].Add(a);
-			normals[roundedKey].Add(b);
-			normals[roundedKey].Add(c);
-		}
-
-		// CREATE VORONOI TILES
-		List<VoronoiTile> tiles = new List<VoronoiTile>();
-		foreach (var pair in normals)
-		{
-			List<Vector3> tileVerts = new List<Vector3>();
-			for (int p = 0; p < pair.Value.Count; ++p)
-			{
-				tileVerts.Add(pair.Value[p]);
-			}
-			GameObject tile = new GameObject("Tile", typeof(VoronoiTile), typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider));
-			var thisTile = tile.GetComponent<VoronoiTile>() as VoronoiTile;
-
-			thisTile.Initialize(tileVerts, false); // OPTIMIZE HERE
-
-			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
-			tile.GetComponent<MeshCollider>().sharedMesh = thisTile.tileMesh;
-
-			thisTile.Normal = pair.Key;
-			tiles.Add(thisTile);
-			++numberOfTiles;
-		}
-
-		foreach (var tile in tiles)
-		{
-			tile.FindNeighbors(tiles);
-		}
-
-		List<VoronoiTile> waterTiles = new List<VoronoiTile>();
-		foreach (var pair in normals)
-		{
-			List<Vector3> tileVerts = new List<Vector3>();
-			for (int p = 0; p < pair.Value.Count; ++p)
-			{
-				tileVerts.Add(pair.Value[p]);
-			}
-			GameObject tile = new GameObject("WaterTile", typeof(VoronoiTile), typeof(MeshFilter), typeof(MeshRenderer));
-			var thisTile = tile.GetComponent<VoronoiTile>() as VoronoiTile;
-			thisTile.Initialize(tileVerts, true);
-			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
-			tile.GetComponent<MeshRenderer>().material = materials.Ocean;
-			waterTiles.Add(thisTile);
-		}
-
-		ocean = new GameObject("Ocean");
-		ocean.transform.parent = transform;
-		foreach (var tile in waterTiles)
-		{
-			tile.transform.parent = ocean.transform;
-		}
-
-		// FLOOD FILLS
-		// GENERATE PLATES
-		List<VoronoiTile> plateStartNodes = GeneratePlateStartNodes(Plates, ref tiles);
-
-		// GENERATE PLATE MATERIALS
-		List<Material> plateMaterials = GenerateMaterials(1); // changed here
-
-		// GENERATE START LISTS
-		List<List<VoronoiTile>> colors = new List<List<VoronoiTile>>();
-		for (int b = 0; b < Plates; ++b)
-		{
-			colors.Add(new List<VoronoiTile>() { plateStartNodes[b] });
-		}
-
-		// FILL
-		FloodFillSimultaneous(ref colors, plateMaterials, ref tiles);
-
-		// GROUP PLATES
-		plateList = new List<TectonicPlate>();
-		for (int q = 0; q < Plates; ++q)
-		{
-			GameObject plateTest = new GameObject("Plate" + q, typeof(TectonicPlate));
-			List<VoronoiTile> testPlateTiles = new List<VoronoiTile>();
-			foreach (var voronoiTile in tiles)
-			{
-				if (voronoiTile.plate == q) testPlateTiles.Add(voronoiTile);
-			}
-			var thisTecPlate = plateTest.GetComponent<TectonicPlate>();
-			thisTecPlate.Initialize(ref testPlateTiles);
-			int land = Random.Range(0, 10);
-			if (land < LandAmount) thisTecPlate.isLand = true;
-			plateTest.transform.parent = transform;
-			plateList.Add(thisTecPlate);
-		}
-
-		// CREATE WATER AND LAND AREAS FOR HEIGHT
+		FloodFillSimultaneous(plateStartNodes, plateMaterials, tiles);
+		GroupPlates(tiles);
 		FindWaterAndLandPoints();
-
-		// DETERMINE BIOMES
 		AssignPlateProperties();
 		AssignTileProperties();
 		DetermineBiomes(true);
 		GenerateHeight();
 		DetermineHeightBiomes();
 	}
+
+	public void DrawColdLat()
+	{
+		Destroy(m_topColdGizmo);
+		Destroy(m_botColdGizmo);
+
+		float h = Vector2.Distance(new Vector2(0, ColdLat), new Vector2(0, Size));
+		float a = Mathf.Sqrt(h * (2 * Size - h));
+
+		float h2 = Vector2.Distance(new Vector2(0, -ColdLat), new Vector2(0, Size));
+		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
+
+		m_topColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_topColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
+		m_topColdGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
+		m_topColdGizmo.transform.position = new Vector3(0, ColdLat, 0);
+
+		m_botColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_botColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
+		m_botColdGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
+		m_botColdGizmo.transform.position = new Vector3(0, -ColdLat, 0);
+		m_seconds = 3f;
+	}
+	public void DrawTempLat()
+	{
+		Destroy(m_topTempGizmo);
+		Destroy(m_botTempGizmo);
+
+		float h = Vector2.Distance(new Vector2(0, TempLat), new Vector2(0, Size));
+		float a = Mathf.Sqrt(h * (2 * Size - h));
+
+		float h2 = Vector2.Distance(new Vector2(0, -TempLat), new Vector2(0, Size));
+		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
+
+		m_topTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_topTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
+		m_topTempGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
+		m_topTempGizmo.transform.position = new Vector3(0, TempLat, 0);
+
+		m_botTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_botTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
+		m_botTempGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
+		m_botTempGizmo.transform.position = new Vector3(0, -TempLat, 0);
+		m_seconds = 3f;
+	}
+	public void DrawWarmLat()
+	{
+		Destroy(m_topWarmGizmo);
+		Destroy(m_botWarmGizmo);
+
+		float h = Vector2.Distance(new Vector2(0, WarmLat), new Vector2(0, Size));
+		float a = Mathf.Sqrt(h * (2 * Size - h));
+
+		float h2 = Vector2.Distance(new Vector2(0, -WarmLat), new Vector2(0, Size));
+		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
+
+		m_topWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_topWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
+		m_topWarmGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
+		m_topWarmGizmo.transform.position = new Vector3(0, WarmLat, 0);
+
+		m_botWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+		m_botWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
+		m_botWarmGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
+		m_botWarmGizmo.transform.position = new Vector3(0, -WarmLat, 0);
+		m_seconds = 3f;
+	}
 	public void SetMaterialToBlank()
 	{
-		foreach (var plate in plateList)
+		foreach (var plate in m_tectonicPlates)
 		{
 			foreach (var tile in plate.tiles)
 			{
@@ -394,8 +229,8 @@ public class Generate : MonoBehaviour
 	}
 	public void SetMaterialToTemp()
 	{
-		layer = 1;
-		foreach (var plate in plateList)
+		m_layer = 1;
+		foreach (var plate in m_tectonicPlates)
 		{
 			foreach (var tile in plate.tiles)
 			{
@@ -408,8 +243,8 @@ public class Generate : MonoBehaviour
 	}
 	public void SetMaterialToHum()
 	{
-		layer = 2;
-		foreach (var plate in plateList)
+		m_layer = 2;
+		foreach (var plate in m_tectonicPlates)
 		{
 			foreach (var tile in plate.tiles)
 			{
@@ -422,8 +257,8 @@ public class Generate : MonoBehaviour
 	}
 	public void SetMaterialToHeight()
 	{
-		layer = 3;
-		foreach (var plate in plateList)
+		m_layer = 3;
+		foreach (var plate in m_tectonicPlates)
 		{
 			foreach (var tile in plate.tiles)
 			{
@@ -435,8 +270,8 @@ public class Generate : MonoBehaviour
 	}
 	public void ToggleOcean()
 	{
-		oceanActive = !oceanActive;
-		ocean.SetActive(oceanActive);
+		m_oceanActive = !m_oceanActive;
+		m_ocean.SetActive(m_oceanActive);
 	}
 	public void Export()
 	{
@@ -447,8 +282,8 @@ public class Generate : MonoBehaviour
 	}
 	public void DetermineHeightBiomes()
 	{
-		layer = 0;
-		foreach (var plate in plateList)
+		m_layer = 0;
+		foreach (var plate in m_tectonicPlates)
 		{
 			foreach (var tile in plate.tiles)
 			{
@@ -481,13 +316,292 @@ public class Generate : MonoBehaviour
 		AssignPlateProperties();
 		AssignTileProperties();
 		DetermineBiomes(false);
-		if (layer == 0) DetermineHeightBiomes();
-		else if (layer == 1) SetMaterialToTemp();
-		else if (layer == 2) SetMaterialToHum();
-		else if (layer == 3) SetMaterialToHeight();
+		if (m_layer == 0) DetermineHeightBiomes();
+		else if (m_layer == 1) SetMaterialToTemp();
+		else if (m_layer == 2) SetMaterialToHum();
+		else if (m_layer == 3) SetMaterialToHeight();
 	}
 
-	private void UnifyMesh(ref Mesh mesh, ref List<Material> mats, Transform t)
+	private void ResetWorld()
+	{
+		foreach (Transform child in transform)
+		{
+			Destroy(child.gameObject);
+		}
+		m_numberOfVertices = Convert.ToInt32(m_tilesField.text);
+		Plates = Convert.ToInt32(m_platesField.text);
+		Seed = Convert.ToInt32(m_seedField.text);
+		Random.InitState(Seed);
+	}
+	private List<Vector3> GeneratePointsUniformly()
+	{
+		var allVertices = new List<Vector3>();
+		var size = Size;
+		var firstPoint = Random.onUnitSphere * size;
+
+		allVertices.Add(firstPoint);
+		NonRecursiveGenerateBestCandidates(allVertices, size, m_numberOfVertices);
+		allVertices.Sort((v1, v2) => v1.y.CompareTo(v2.y));
+
+		return allVertices;
+	}
+	private Vertex3[] GenerateVoronoiVertices(List<Vector3> list)
+	{
+		var voronoiVertices = new Vertex3[m_numberOfVertices + 1]; // VORONOI VERTICES NEED ONE EXTRA ONE IN CENTER
+		var i = 0;
+		while (i < m_numberOfVertices)
+		{
+			voronoiVertices[i] = new Vertex3(list[i].x, list[i].y, list[i].z);
+			i++;
+		}
+		voronoiVertices[m_numberOfVertices] = new Vertex3(0, 0, 0);
+
+		return voronoiVertices;
+	}
+	private List<Vector3> GenerateVoronoiHullVertices(VoronoiMesh<Vertex3, Cell3, VoronoiEdge<Vertex3, Cell3>> voronoiMesh)
+	{
+		var voronoiHullVertices = new List<Vector3>();
+		var index = 0;
+		foreach (var edge in voronoiMesh.Edges)
+		{
+			var source = new Vector3(edge.Source.Circumcenter.x, edge.Source.Circumcenter.y, edge.Source.Circumcenter.z);
+			var target = new Vector3(edge.Target.Circumcenter.x, edge.Target.Circumcenter.y, edge.Target.Circumcenter.z);
+			source *= Size * .4f;
+			target *= Size * .4f;
+			if (!voronoiHullVertices.Contains(source))
+			{
+				voronoiHullVertices.Add(source);
+			}
+			if (!voronoiHullVertices.Contains(target))
+			{
+				voronoiHullVertices.Add(target);
+			}
+			index++;
+		}
+
+		return voronoiHullVertices;
+	}
+	private List<int> GenerateConvexHullIndices(List<Face3> faces, List<Vertex3> vertices)
+	{
+		var indices = new List<int>();
+		foreach (var face in faces)
+		{
+			indices.Add(vertices.IndexOf(face.Vertices[0]));
+			indices.Add(vertices.IndexOf(face.Vertices[1]));
+			indices.Add(vertices.IndexOf(face.Vertices[2]));
+		}
+
+		return indices;
+	}
+	private Vertex3[] GenerateDelaunayVertices(List<Vector3> voronoiHullVertices)
+	{
+		var verticesDelaunay = new Vertex3[voronoiHullVertices.Count];
+		for (int i = 0; i < verticesDelaunay.Length; i++)
+		{
+			var vertex = voronoiHullVertices[i];
+			verticesDelaunay[i] = new Vertex3(vertex.x, vertex.y, vertex.z);
+		}
+
+		return verticesDelaunay;
+	}
+	private Dictionary<Vector3, List<Vector3>> GenerateNormals(List<Vertex3> convexHullVertices, List<int> convexHullIndices)
+	{
+		var normals = new Dictionary<Vector3, List<Vector3>>();
+		for (var j = 0; j < convexHullIndices.Count; j += 3)
+		{
+			var v0 = convexHullIndices[j + 0];
+			var v1 = convexHullIndices[j + 1];
+			var v2 = convexHullIndices[j + 2];
+
+			var a = new Vector3((float)convexHullVertices[v0].x, (float)convexHullVertices[v0].y, (float)convexHullVertices[v0].z);
+			var b = new Vector3((float)convexHullVertices[v1].x, (float)convexHullVertices[v1].y, (float)convexHullVertices[v1].z);
+			var c = new Vector3((float)convexHullVertices[v2].x, (float)convexHullVertices[v2].y, (float)convexHullVertices[v2].z);
+
+			var normal = Vector3.Cross(a - b, a - c);
+
+			// DECLARE KEY AND ROUND IT TO AVOID FLOATING POINT ISSUES
+			var key = normal.normalized;
+			var roundX = Mathf.Round(key.x * 100) / 100;
+			var roundY = Mathf.Round(key.y * 100) / 100;
+			var roundZ = Mathf.Round(key.z * 100) / 100;
+			var roundedKey = new Vector3(roundX, roundY, roundZ);
+
+			// POPULATE DICTIONARY
+			if (!normals.ContainsKey(roundedKey))
+			{
+				normals.Add(roundedKey, new List<Vector3>());
+			}
+			normals[roundedKey].Add(a);
+			normals[roundedKey].Add(b);
+			normals[roundedKey].Add(c);
+		}
+
+		return normals;
+	}
+	private List<VoronoiTile> CreateTiles(Dictionary<Vector3, List<Vector3>> normals)
+	{
+		var tiles = new List<VoronoiTile>();
+		foreach (var pair in normals)
+		{
+			var tileVerts = new List<Vector3>();
+			for (var p = 0; p < pair.Value.Count; ++p)
+			{
+				tileVerts.Add(pair.Value[p]);
+			}
+			var tile = new GameObject("Tile", typeof(VoronoiTile), typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider));
+			var thisTile = tile.GetComponent<VoronoiTile>();
+
+			thisTile.Initialize(tileVerts, false); // OPTIMIZE HERE
+
+			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
+			tile.GetComponent<MeshCollider>().sharedMesh = thisTile.tileMesh;
+
+			thisTile.Normal = pair.Key;
+			tiles.Add(thisTile);
+			++m_numberOfTiles;
+		}
+
+		return tiles;
+	}
+	private void CreateWaterTiles(Dictionary<Vector3, List<Vector3>> normals)
+	{
+		m_ocean = new GameObject("Ocean");
+		m_ocean.transform.parent = transform;
+
+		var waterTiles = new List<VoronoiTile>();
+		foreach (var pair in normals)
+		{
+			var tileVerts = new List<Vector3>();
+			for (var p = 0; p < pair.Value.Count; ++p)
+			{
+				tileVerts.Add(pair.Value[p]);
+			}
+			var tile = new GameObject("WaterTile", typeof(VoronoiTile), typeof(MeshFilter), typeof(MeshRenderer));
+			var thisTile = tile.GetComponent<VoronoiTile>();
+			thisTile.Initialize(tileVerts, true);
+			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
+			tile.GetComponent<MeshRenderer>().material = materials.Ocean;
+			tile.transform.parent = m_ocean.transform;
+			waterTiles.Add(thisTile);
+		}
+	}
+	private void FindTileNeighbours(List<VoronoiTile> tiles)
+	{
+		foreach (var tile in tiles)
+		{
+			tile.FindNeighbors(tiles);
+		}
+	}
+	private List<VoronoiTile> GeneratePlateStartNodes(int count, List<VoronoiTile> allTiles)
+	{
+		var firstTile = allTiles[Random.Range(0, allTiles.Count)];
+		var nodes = new List<VoronoiTile> { firstTile };
+		GenerateBestTileCandidates(nodes, count, allTiles);
+
+		return nodes;
+	}
+	private void GenerateBestTileCandidates(List<VoronoiTile> samples, int depth, List<VoronoiTile> allTiles)
+	{
+		if (depth == 1)
+		{
+			return;
+		}
+
+		var candidates = new List<VoronoiTile>();
+		for (var i = 0; i < NumberOfCandidates; ++i)
+		{
+			var tile = allTiles[Random.Range(0, allTiles.Count)];
+			candidates.Add(tile);
+		}
+		var bestCandidate = candidates.First();
+		var isFirst = true;
+		var largestDistance = 0f;
+		foreach (var candidate in candidates)
+		{
+			var closest = FindClosestTile(candidate, samples);
+			var distance = Vector3.Distance(closest.centerPoint, candidate.centerPoint);
+			if (isFirst || distance > largestDistance)
+			{
+				largestDistance = distance;
+				bestCandidate = candidate;
+				isFirst = false;
+			}
+		}
+		samples.Add(bestCandidate);
+		GenerateBestTileCandidates(samples, depth - 1, allTiles);
+	}
+	private List<Material> GenerateMaterials(int amount)
+	{
+		var materials = new List<Material>();
+		for (var i = 0; i < amount; i++)
+		{
+			var material = new Material(Shader.Find("Standard"));
+			material.SetFloat("_Glossiness", 0.0f);
+			material.color = new Color(Random.value, Random.value, Random.value, 1.0f);
+		}
+
+		for (var j = 0; j < amount; ++j)
+		{
+			materials.Add(Resources.Load<Material>("" + j));
+		}
+
+		return materials;
+	}
+	private void FloodFillSimultaneous(List<VoronoiTile> plateStartNodes, List<Material> replacements, List<VoronoiTile> allTiles)
+	{
+		var colors = new List<List<VoronoiTile>>();
+		for (var i = 0; i < Plates; ++i)
+		{
+			colors.Add(new List<VoronoiTile>() { plateStartNodes[i] });
+		}
+
+		while (!AreAllProcessed(allTiles))
+		{
+			for (int colorIndex = 0; colorIndex < colors.Count; ++colorIndex) // for each node in colors, fill neighbors
+			{
+				List<VoronoiTile> newNodes = new List<VoronoiTile>();
+				for (int tileIndex = 0; tileIndex < colors[colorIndex].Count; tileIndex++) // go over each node in the colors (first step only one) and fill neighbors
+				{
+					VoronoiTile tile = colors[colorIndex][tileIndex];
+					FillNeighbors(tile, replacements[0], colorIndex); // changed here
+					foreach (var neighbor in tile.neighbors)
+					{
+						foreach (var nbr in neighbor.neighbors)
+						{
+							if (!nbr.processed) newNodes.Add(nbr);
+						}
+					}
+				}
+				colors[colorIndex].Clear();
+				colors[colorIndex] = newNodes;
+			}
+		}
+	}
+	private void GroupPlates(List<VoronoiTile> tiles)
+	{
+		m_tectonicPlates = new List<TectonicPlate>();
+		for (var i = 0; i < Plates; ++i)
+		{
+			var plateTest = new GameObject("Plate" + i, typeof(TectonicPlate));
+			var testPlateTiles = new List<VoronoiTile>();
+			foreach (var voronoiTile in tiles)
+			{
+				if (voronoiTile.plate == i)
+				{
+					testPlateTiles.Add(voronoiTile);
+				}
+			}
+			var thisTecPlate = plateTest.GetComponent<TectonicPlate>();
+			thisTecPlate.Initialize(ref testPlateTiles);
+			if (Random.Range(0, 10) < LandAmount)
+			{
+				thisTecPlate.isLand = true;
+			}
+			plateTest.transform.parent = transform;
+			m_tectonicPlates.Add(thisTecPlate);
+		}
+	}
+	private void UnifyMesh(Mesh mesh, List<Material> mats, Transform t)
 	{
 		// IT ONLY TAKES ONE MESH FILTER PER PLATE
 		MeshFilter[] meshFilters = t.GetComponentsInChildren<MeshFilter>();
@@ -506,9 +620,9 @@ public class Generate : MonoBehaviour
 	}
 	private void FindWaterAndLandPoints()
 	{
-		waterVerts = new List<Vector3>();
-		landVerts = new List<Vector3>();
-		foreach (var tectonicPlate in plateList)
+		m_waterVerts = new List<Vector3>();
+		m_landVerts = new List<Vector3>();
+		foreach (var tectonicPlate in m_tectonicPlates)
 		{
 			if (!tectonicPlate.isLand)
 			{
@@ -516,7 +630,7 @@ public class Generate : MonoBehaviour
 				{
 					foreach (var vertex in voronoiTile.tileMesh.vertices)
 					{
-						waterVerts.Add(vertex);
+						m_waterVerts.Add(vertex);
 					}
 				}
 			}
@@ -526,17 +640,17 @@ public class Generate : MonoBehaviour
 				{
 					foreach (var vertex in voronoiTile.tileMesh.vertices)
 					{
-						landVerts.Add(vertex);
+						m_landVerts.Add(vertex);
 					}
 				}
 			}
 		}
-		waterVerts = waterVerts.Distinct().ToList();
-		landVerts = landVerts.Distinct().ToList();
+		m_waterVerts = m_waterVerts.Distinct().ToList();
+		m_landVerts = m_landVerts.Distinct().ToList();
 	}
 	private void AssignPlateProperties()
 	{
-		foreach (var tectonicPlate in plateList)
+		foreach (var tectonicPlate in m_tectonicPlates)
 		{
 			float distanceFromEquator = tectonicPlate.middle.y;
 			if (distanceFromEquator > ColdLat || distanceFromEquator < -ColdLat) // POLES
@@ -563,7 +677,7 @@ public class Generate : MonoBehaviour
 	}
 	private void AssignTileProperties()
 	{
-		foreach (var tectonicPlate in plateList)
+		foreach (var tectonicPlate in m_tectonicPlates)
 		{
 			foreach (var tile in tectonicPlate.tiles)
 			{
@@ -590,7 +704,7 @@ public class Generate : MonoBehaviour
 	}
 	private void DetermineBiomes(bool alsoWater)
 	{
-		foreach (var tectonicPlate in plateList)
+		foreach (var tectonicPlate in m_tectonicPlates)
 		{
 			foreach (var tile in tectonicPlate.tiles)
 			{
@@ -611,14 +725,14 @@ public class Generate : MonoBehaviour
 	}
 	private void GenerateHeight()
 	{
-		foreach (var tectonicPlate in plateList)
+		foreach (var tectonicPlate in m_tectonicPlates)
 		{
 			if (tectonicPlate.isLand)
 			{
 				tectonicPlate.PushOutLand(0.02f);
 				foreach (var tile in tectonicPlate.tiles)
 				{
-					float distance = Vector3.Distance(tile.centerPoint, FindClosest(tile.centerPoint, waterVerts));
+					float distance = Vector3.Distance(tile.centerPoint, FindClosest(tile.centerPoint, m_waterVerts));
 					if (distance > 1.3f)
 					{
 						tile.Push(0.02f);
@@ -637,7 +751,7 @@ public class Generate : MonoBehaviour
 				tectonicPlate.PushOutLand(-0.02f);
 				foreach (var tile in tectonicPlate.tiles)
 				{
-					float distance = Vector3.Distance(tile.centerPoint, FindClosest(tile.centerPoint, landVerts));
+					float distance = Vector3.Distance(tile.centerPoint, FindClosest(tile.centerPoint, m_landVerts));
 					if (distance > 1)
 					{
 						tile.Push(-0.02f);
@@ -656,7 +770,7 @@ public class Generate : MonoBehaviour
 			}
 		}
 	}
-	private void GenerateBestCandidates(ref List<Vector3> samples, float s, int depth)
+	private void GenerateBestCandidates(List<Vector3> samples, float s, int depth)
 	{
 		if (depth == 1) return;
 		List<Vector3> candidates = new List<Vector3>();
@@ -683,27 +797,27 @@ public class Generate : MonoBehaviour
 			}
 		}
 		samples.Add(bestCandidate);
-		GenerateBestCandidates(ref samples, s, depth - 1);
+		GenerateBestCandidates(samples, s, depth - 1);
 	}
-	private void NonRecursiveGenerateBestCandidates(ref List<Vector3> samples, float s)
+	private void NonRecursiveGenerateBestCandidates(List<Vector3> samples, float s, int numberOfVertices)
 	{
 		while (samples.Count < numberOfVertices)
 		{
-			List<Vector3> candidates = new List<Vector3>();
-			for (int i = 0; i < 10; ++i)
+			var candidates = new List<Vector3>();
+			for (var i = 0; i < NumberOfCandidates; ++i)
 			{
-				Vector3 point = Random.onUnitSphere;
+				var point = Random.onUnitSphere;
 				point *= s;
 				candidates.Add(point);
 			}
 
-			Vector3 bestCandidate = Vector3.zero;
-			bool isFirst = true;
-			float largestDistance = 0;
+			var bestCandidate = Vector3.zero;
+			var isFirst = true;
+			var largestDistance = 0f;
 			foreach (var candidate in candidates)
 			{
-				Vector3 closest = FindClosest(candidate, samples);
-				float distance = Vector3.Distance(closest, candidate);
+				var closest = FindClosest(candidate, samples);
+				var distance = Vector3.Distance(closest, candidate);
 
 				if (isFirst || distance > largestDistance)
 				{
@@ -714,45 +828,19 @@ public class Generate : MonoBehaviour
 			}
 			samples.Add(bestCandidate);
 		}
-
-	}
-	private void GenerateBestTileCandidates(ref List<VoronoiTile> samples, int depth, ref List<VoronoiTile> allTiles)
-	{
-		if (depth == 1) return;
-		List<VoronoiTile> candidates = new List<VoronoiTile>();
-		for (int i = 0; i < 10; ++i)
-		{
-			VoronoiTile tile = allTiles[Random.Range(0, allTiles.Count)];
-			candidates.Add(tile);
-		}
-		VoronoiTile bestCandidate = candidates.First();
-		bool isFirst = true;
-		float largestDistance = 0;
-		foreach (var candidate in candidates)
-		{
-			VoronoiTile closest = FindClosestTile(candidate, ref samples);
-			float distance = Vector3.Distance(closest.centerPoint, candidate.centerPoint);
-			if (isFirst || distance > largestDistance)
-			{
-				largestDistance = distance;
-				bestCandidate = candidate;
-				isFirst = false;
-			}
-		}
-		samples.Add(bestCandidate);
-		GenerateBestTileCandidates(ref samples, depth - 1, ref allTiles);
 	}
 	private void FillNeighbors(VoronoiTile node, Material replacement, int plateNumber)
 	{
-		if (node.processed == false)
+		if (!node.processed)
 		{
 			node.GetComponent<MeshRenderer>().material = replacement;
 			node.plate = plateNumber;
 			node.processed = true;
 		}
+
 		foreach (var neighbor in node.neighbors)
 		{
-			if (neighbor.processed == false)
+			if (!neighbor.processed)
 			{
 				neighbor.GetComponent<MeshRenderer>().material = replacement;
 				neighbor.plate = plateNumber;
@@ -760,46 +848,26 @@ public class Generate : MonoBehaviour
 			}
 		}
 	}
-	private void FloodFillSimultaneous(ref List<List<VoronoiTile>> colors, List<Material> replacements, ref List<VoronoiTile> allTiles)
-	{
-		while (!AreAllProcessed(ref allTiles))
-		{
-			for (int colorIndex = 0; colorIndex < colors.Count; ++colorIndex) // for each node in colors, fill neighbors
-			{
-				List<VoronoiTile> newNodes = new List<VoronoiTile>();
-				for (int tileIndex = 0; tileIndex < colors[colorIndex].Count; tileIndex++) // go over each node in the colors (first step only one) and fill neighbors
-				{
-					VoronoiTile tile = colors[colorIndex][tileIndex];
-					FillNeighbors(tile, replacements[0], colorIndex); // changed here
-					foreach (var neighbor in tile.neighbors)
-					{
-						foreach (var nbr in neighbor.neighbors)
-						{
-							if (!nbr.processed) newNodes.Add(nbr);
-						}
-					}
-				}
-				colors[colorIndex].Clear();
-				colors[colorIndex] = newNodes;
-			}
-		}
-	}
-	private bool AreAllProcessed(ref List<VoronoiTile> allTiles)
+	private bool AreAllProcessed(List<VoronoiTile> allTiles)
 	{
 		foreach (var tile in allTiles)
 		{
-			if (!tile.processed) return false;
+			if (!tile.processed)
+			{
+				return false;
+			}
 		}
+
 		return true;
 	}
 	private Vector3 FindClosest(Vector3 point, List<Vector3> samples)
 	{
-		Vector3 closest = new Vector3();
-		bool isFirst = true;
-		float smallestDistance = 0;
+		var closest = new Vector3();
+		var isFirst = true;
+		var smallestDistance = 0f;
 		foreach (var p in samples)
 		{
-			float distance = Vector3.Distance(p, point);
+			var distance = Vector3.Distance(p, point);
 			if (isFirst || distance < smallestDistance)
 			{
 				smallestDistance = distance;
@@ -807,17 +875,18 @@ public class Generate : MonoBehaviour
 				isFirst = false;
 			}
 		}
+
 		return closest;
 	}
 	private List<Vector3> FindClosestTwo(List<Vector3> firstSet, List<Vector3> secondSet)
 	{
-		List<Vector3> closestTwo = new List<Vector3>();
-		bool isFirst = true;
-		float smallestDistance = 0;
+		var closestTwo = new List<Vector3>();
+		var isFirst = true;
+		var smallestDistance = 0f;
 		foreach (var pos in firstSet)
 		{
-			Vector3 other = FindClosest(pos, secondSet);
-			float distance = Vector3.Distance(pos, other);
+			var other = FindClosest(pos, secondSet);
+			var distance = Vector3.Distance(pos, other);
 			if (isFirst || distance < smallestDistance)
 			{
 				closestTwo.Clear();
@@ -827,24 +896,18 @@ public class Generate : MonoBehaviour
 				isFirst = false;
 			}
 		}
+
 		return closestTwo;
 	}
-	private List<VoronoiTile> GeneratePlateStartNodes(int count, ref List<VoronoiTile> allTiles)
+	private VoronoiTile FindClosestTile(VoronoiTile tile, List<VoronoiTile> samples)
 	{
-		VoronoiTile firstTile = allTiles[Random.Range(0, allTiles.Count)];
-		List<VoronoiTile> nodes = new List<VoronoiTile>();
-		nodes.Add(firstTile);
-		GenerateBestTileCandidates(ref nodes, count, ref allTiles);
-		return nodes;
-	}
-	private VoronoiTile FindClosestTile(VoronoiTile tile, ref List<VoronoiTile> samples)
-	{
-		VoronoiTile closest = tile;
-		bool isFirst = true;
-		float smallestDistance = 0;
+		var closest = tile;
+		var isFirst = true;
+		var smallestDistance = 0f;
+
 		foreach (var sample in samples)
 		{
-			float distance = Vector3.Distance(sample.centerPoint, tile.centerPoint);
+			var distance = Vector3.Distance(sample.centerPoint, tile.centerPoint);
 			if (isFirst || distance < smallestDistance)
 			{
 				smallestDistance = distance;
@@ -852,42 +915,20 @@ public class Generate : MonoBehaviour
 				isFirst = false;
 			}
 		}
+
 		return closest;
-	}
-	private List<Material> GenerateMaterials(int amount)
-	{
-		List<Material> materials = new List<Material>();
-		for (int i = 0; i < amount; i++)
-		{
-			var material = new Material(Shader.Find("Standard"));
-			material.SetFloat("_Glossiness", 0.0f);
-			material.color = new Color(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), 1);
-		}
-		for (int j = 0; j < amount; ++j)
-		{
-			materials.Add(Resources.Load("" + j, typeof(Material)) as Material);
-		}
-		return materials;
 	}
 	private Mesh GenerateTriangle(Vector3 a, Vector3 b, Vector3 c)
 	{
-		Mesh tri = new Mesh();
-		tri.vertices = new Vector3[] { a, b, c };
-		tri.triangles = new int[] { 0, 1, 2 };
+		var tri = new Mesh
+		{
+			vertices = new Vector3[] { a, b, c },
+			triangles = new int[] { 0, 1, 2 }
+		};
 		tri.RecalculateNormals();
 		tri.RecalculateBounds();
-		;
+
 		return tri;
-	}
-	private List<Vector3> GeneratePointsUniformly()
-	{
-		float s = (float)size;
-		Vector3 firstPoint = Random.onUnitSphere;
-		firstPoint *= s;
-		List<Vector3> bestCandidates = new List<Vector3>();
-		bestCandidates.Add(firstPoint);
-		NonRecursiveGenerateBestCandidates(ref bestCandidates, s);
-		return bestCandidates;
 	}
 
 	//private GameObject topColdGizmo;

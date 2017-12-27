@@ -296,22 +296,6 @@ namespace Assets
 
         }
 
-        public enum Biomes
-        {
-            Sand,
-            Glacier,
-            Plains,
-            Snow,
-            Swamp,
-            Hill,
-            Mountain,
-            Jungle,
-            Desert,
-            Dirt,
-            Tundra,
-            Forest
-        }
-
         public void OnMouseOver()
         {
             if(altitude <= 0) Generate.biomeText.text = "Water";
