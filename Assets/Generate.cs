@@ -10,10 +10,11 @@ using Random = UnityEngine.Random;
 public class Generate : MonoBehaviour
 {
 	public int Size = 5;
+	public int NumberOfPoints = 200;
 	public int NumberOfCandidates = 10;
-
-	[SerializeField]
-	private Materials materials = new Materials();
+	public int Plates = 30;
+	public int Seed = 0;
+	public Materials Materials = new Materials();
 
 	private List<Vector3> m_waterVerts;
 	private List<Vector3> m_landVerts;
@@ -32,19 +33,10 @@ public class Generate : MonoBehaviour
 	private InputField m_tilesField;
 	private bool m_oceanActive = true;
 	private float m_seconds = 1f;
-	private int m_numberOfVertices;
 	private int m_numberOfTiles;
 	private int m_layer;
 
 	public static Text biomeText;
-
-	private int Plates { get; set; }
-	private int Seed { get; set; }
-	private int NumberOfVertices
-	{
-		get { return m_numberOfVertices; }
-		set { m_numberOfVertices = Convert.ToInt32(value); }
-	}
 
 	public float LandAmount { get; set; }
 	public float RotationSpeed { get; set; }
@@ -62,14 +54,11 @@ public class Generate : MonoBehaviour
 		m_texts = FindObjectsOfType<Text>();
 		biomeText = m_texts[12];
 
-		m_numberOfVertices = 200;
-		Plates = 20;
 		RotationSpeed = 4;
 		HumidityModifier = 0;
 		ColdLat = 4.2f;
 		TempLat = 2.7f;
 		WarmLat = 0.9f;
-		Seed = Random.Range(Int32.MinValue, Int32.MaxValue);
 		LandAmount = 4f;
 
 		Create();
@@ -150,8 +139,13 @@ public class Generate : MonoBehaviour
 		DetermineBiomes(true);
 		GenerateHeight();
 		DetermineHeightBiomes();
-	}
 
+		foreach (var tile in tiles)
+		{
+			tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
+			tile.GetComponent<MeshCollider>().convex = true;
+		}
+	}
 	public void DrawColdLat()
 	{
 		Destroy(m_topColdGizmo);
@@ -164,12 +158,12 @@ public class Generate : MonoBehaviour
 		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
 
 		m_topColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_topColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
+		m_topColdGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Cold;
 		m_topColdGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
 		m_topColdGizmo.transform.position = new Vector3(0, ColdLat, 0);
 
 		m_botColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_botColdGizmo.GetComponent<MeshRenderer>().material = materials.Cold;
+		m_botColdGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Cold;
 		m_botColdGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 		m_botColdGizmo.transform.position = new Vector3(0, -ColdLat, 0);
 		m_seconds = 3f;
@@ -186,12 +180,12 @@ public class Generate : MonoBehaviour
 		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
 
 		m_topTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_topTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
+		m_topTempGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperate;
 		m_topTempGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
 		m_topTempGizmo.transform.position = new Vector3(0, TempLat, 0);
 
 		m_botTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_botTempGizmo.GetComponent<MeshRenderer>().material = materials.Temperate;
+		m_botTempGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperate;
 		m_botTempGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 		m_botTempGizmo.transform.position = new Vector3(0, -TempLat, 0);
 		m_seconds = 3f;
@@ -208,12 +202,12 @@ public class Generate : MonoBehaviour
 		float a2 = Mathf.Sqrt(h2 * (2 * Size - h2));
 
 		m_topWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_topWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
+		m_topWarmGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Warm;
 		m_topWarmGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
 		m_topWarmGizmo.transform.position = new Vector3(0, WarmLat, 0);
 
 		m_botWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-		m_botWarmGizmo.GetComponent<MeshRenderer>().material = materials.Warm;
+		m_botWarmGizmo.GetComponent<MeshRenderer>().sharedMaterial = Materials.Warm;
 		m_botWarmGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 		m_botWarmGizmo.transform.position = new Vector3(0, -WarmLat, 0);
 		m_seconds = 3f;
@@ -224,7 +218,7 @@ public class Generate : MonoBehaviour
 		{
 			foreach (var tile in plate.tiles)
 			{
-				tile.GetComponent<MeshRenderer>().material = materials.Blank;
+				tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Blank;
 			}
 		}
 	}
@@ -235,10 +229,10 @@ public class Generate : MonoBehaviour
 		{
 			foreach (var tile in plate.tiles)
 			{
-				if (tile.temperature > 0.0f && tile.temperature <= 1f) tile.GetComponent<MeshRenderer>().material = materials.Temperature1;
-				else if (tile.temperature > 1f && tile.temperature <= 2f) tile.GetComponent<MeshRenderer>().material = materials.Temperature2;
-				else if (tile.temperature > 2f && tile.temperature <= 3f) tile.GetComponent<MeshRenderer>().material = materials.Temperature3;
-				else if (tile.temperature > 3f) tile.GetComponent<MeshRenderer>().material = materials.Temperature4;
+				if (tile.temperature > 0.0f && tile.temperature <= 1f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperature1;
+				else if (tile.temperature > 1f && tile.temperature <= 2f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperature2;
+				else if (tile.temperature > 2f && tile.temperature <= 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperature3;
+				else if (tile.temperature > 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Temperature4;
 			}
 		}
 	}
@@ -249,10 +243,10 @@ public class Generate : MonoBehaviour
 		{
 			foreach (var tile in plate.tiles)
 			{
-				if (tile.humidity > -2.0f && tile.humidity <= 1f) tile.GetComponent<MeshRenderer>().material = materials.Humidity1;
-				else if (tile.humidity > 1f && tile.humidity <= 2f) tile.GetComponent<MeshRenderer>().material = materials.Humidity2;
-				else if (tile.humidity > 2f && tile.humidity <= 3f) tile.GetComponent<MeshRenderer>().material = materials.Humidity3;
-				else if (tile.humidity > 3f && tile.humidity <= 4f) tile.GetComponent<MeshRenderer>().material = materials.Humidity4;
+				if (tile.humidity > -2.0f && tile.humidity <= 1f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Humidity1;
+				else if (tile.humidity > 1f && tile.humidity <= 2f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Humidity2;
+				else if (tile.humidity > 2f && tile.humidity <= 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Humidity3;
+				else if (tile.humidity > 3f && tile.humidity <= 4f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Humidity4;
 			}
 		}
 	}
@@ -263,9 +257,9 @@ public class Generate : MonoBehaviour
 		{
 			foreach (var tile in plate.tiles)
 			{
-				if (tile.altitude > 0.0f) tile.GetComponent<MeshRenderer>().material = materials.Altitude1;
-				if (tile.altitude > 0.02f) tile.GetComponent<MeshRenderer>().material = materials.Altitude2;
-				if (tile.altitude > 0.04f) tile.GetComponent<MeshRenderer>().material = materials.Altitude3;
+				if (tile.altitude > 0.0f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Altitude1;
+				if (tile.altitude > 0.02f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Altitude2;
+				if (tile.altitude > 0.04f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Altitude3;
 			}
 		}
 	}
@@ -288,25 +282,26 @@ public class Generate : MonoBehaviour
 		{
 			foreach (var tile in plate.tiles)
 			{
-				if (tile.altitude > 0.02f) { tile.GetComponent<MeshRenderer>().material = materials.Hill; }
-				if (tile.altitude > 0.04f) { tile.GetComponent<MeshRenderer>().material = materials.Mountain; }
-				if (tile.altitude <= 0.00f) { tile.GetComponent<MeshRenderer>().material = materials.Sand1; }
-				if (tile.altitude < -0.02f) tile.GetComponent<MeshRenderer>().material = materials.Sand2;
-				if (tile.altitude < -0.04f) tile.GetComponent<MeshRenderer>().material = materials.Sand3;
-				if (tile.altitude < -0.06f) tile.GetComponent<MeshRenderer>().material = materials.Sand4;
-				if (tile.altitude < -0.14f) tile.GetComponent<MeshRenderer>().material = materials.Lava;
+				if (tile.altitude > 0.02f) { tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Hill; }
+				if (tile.altitude > 0.04f) { tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Mountain; }
+				if (tile.altitude <= 0.00f) { tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand1; }
+				if (tile.altitude < -0.02f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand2;
+				if (tile.altitude < -0.04f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand3;
+				if (tile.altitude < -0.06f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand4;
+				if (tile.altitude < -0.14f) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lava;
 				if (Mathf.Approximately(tile.altitude, 0.02f))
 				{
-					if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().material = materials.Sand1;
-					else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().material = materials.Glacier;
-					else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().material = materials.Plains;
-					else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().material = materials.Snow;
-					else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().material = materials.Jungle;
-					else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().material = materials.Desert;
-					else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().material = materials.Dirt;
-					else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().material = materials.Tundra;
-					else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().material = materials.Forest;
+					if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand1;
+					else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Glacier;
+					else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Plains;
+					else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Snow;
+					else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Jungle;
+					else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Desert;
+					else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Dirt;
+					else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Tundra;
+					else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Forest;
 				}
+
 				tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
 				tile.GetComponent<MeshCollider>().convex = true;
 			}
@@ -329,33 +324,32 @@ public class Generate : MonoBehaviour
 		{
 			Destroy(child.gameObject);
 		}
-		m_numberOfVertices = Convert.ToInt32(m_tilesField.text);
-		Plates = Convert.ToInt32(m_platesField.text);
-		Seed = Convert.ToInt32(m_seedField.text);
+		m_tilesField.text = NumberOfPoints.ToString();
+		m_platesField.text = Plates.ToString();
+		m_seedField.text = Seed.ToString();
 		Random.InitState(Seed);
 	}
 	private List<Vector3> GeneratePointsUniformly()
 	{
-		var allVertices = new List<Vector3>();
 		var size = Size;
 		var firstPoint = Random.onUnitSphere * size;
+		var allVertices = new List<Vector3>() { firstPoint };
 
-		allVertices.Add(firstPoint);
-		NonRecursiveGenerateBestCandidates(allVertices, size, m_numberOfVertices);
+		NonRecursiveGenerateBestCandidates(allVertices, size);
 		allVertices.Sort((v1, v2) => v1.y.CompareTo(v2.y));
 
 		return allVertices;
 	}
 	private Vertex3[] GenerateVoronoiVertices(List<Vector3> list)
 	{
-		var voronoiVertices = new Vertex3[m_numberOfVertices + 1]; // VORONOI VERTICES NEED ONE EXTRA ONE IN CENTER
+		var voronoiVertices = new Vertex3[NumberOfPoints + 1]; // VORONOI VERTICES NEED ONE EXTRA ONE IN CENTER
 		var i = 0;
-		while (i < m_numberOfVertices)
+		while (i < NumberOfPoints)
 		{
-			voronoiVertices[i] = new Vertex3(list[i].x, list[i].y, list[i].z);
+			voronoiVertices[i] = list[i].ToVertex3();
 			i++;
 		}
-		voronoiVertices[m_numberOfVertices] = new Vertex3(0, 0, 0);
+		voronoiVertices[NumberOfPoints] = new Vertex3(0, 0, 0);
 
 		return voronoiVertices;
 	}
@@ -399,8 +393,7 @@ public class Generate : MonoBehaviour
 		var verticesDelaunay = new Vertex3[voronoiHullVertices.Count];
 		for (int i = 0; i < verticesDelaunay.Length; i++)
 		{
-			var vertex = voronoiHullVertices[i];
-			verticesDelaunay[i] = new Vertex3(vertex.x, vertex.y, vertex.z);
+			verticesDelaunay[i] = voronoiHullVertices[i].ToVertex3();
 		}
 
 		return verticesDelaunay;
@@ -414,9 +407,9 @@ public class Generate : MonoBehaviour
 			var v1 = convexHullIndices[j + 1];
 			var v2 = convexHullIndices[j + 2];
 
-			var a = new Vector3((float)convexHullVertices[v0].x, (float)convexHullVertices[v0].y, (float)convexHullVertices[v0].z);
-			var b = new Vector3((float)convexHullVertices[v1].x, (float)convexHullVertices[v1].y, (float)convexHullVertices[v1].z);
-			var c = new Vector3((float)convexHullVertices[v2].x, (float)convexHullVertices[v2].y, (float)convexHullVertices[v2].z);
+			var a = convexHullVertices[v0].ToVector3();
+			var b = convexHullVertices[v1].ToVector3();
+			var c = convexHullVertices[v2].ToVector3();
 
 			var normal = Vector3.Cross(a - b, a - c);
 
@@ -455,7 +448,7 @@ public class Generate : MonoBehaviour
 			thisTile.Initialize(tileVerts, false); // OPTIMIZE HERE
 
 			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
-			tile.GetComponent<MeshCollider>().sharedMesh = thisTile.tileMesh;
+			//tile.GetComponent<MeshCollider>().sharedMesh = thisTile.tileMesh;
 
 			thisTile.Normal = pair.Key;
 			tiles.Add(thisTile);
@@ -481,7 +474,7 @@ public class Generate : MonoBehaviour
 			var thisTile = tile.GetComponent<VoronoiTile>();
 			thisTile.Initialize(tileVerts, true);
 			tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
-			tile.GetComponent<MeshRenderer>().material = materials.Ocean;
+			tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Ocean;
 			tile.transform.parent = m_ocean.transform;
 			waterTiles.Add(thisTile);
 		}
@@ -711,16 +704,16 @@ public class Generate : MonoBehaviour
 			{
 				tile.DetermineBiome();
 				if (alsoWater) tile.DetermineBaseBiome();
-				if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().material = materials.Sand1;
-				else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().material = materials.Glacier;
-				else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().material = materials.Plains;
-				else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().material = materials.Snow;
-				else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().material = materials.Jungle;
-				else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().material = materials.Desert;
-				else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().material = materials.Dirt;
-				else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().material = materials.Tundra;
-				else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().material = materials.Forest;
-				else tile.GetComponent<MeshRenderer>().material = materials.Blank;
+				if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Sand1;
+				else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Glacier;
+				else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Plains;
+				else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Snow;
+				else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Jungle;
+				else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Desert;
+				else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Dirt;
+				else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Tundra;
+				else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Forest;
+				else tile.GetComponent<MeshRenderer>().sharedMaterial = Materials.Blank;
 			}
 		}
 	}
@@ -743,8 +736,8 @@ public class Generate : MonoBehaviour
 						}
 					}
 
-					tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
-					tile.GetComponent<MeshCollider>().convex = true;
+					//tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
+					//tile.GetComponent<MeshCollider>().convex = true;
 				}
 			}
 			else
@@ -765,8 +758,8 @@ public class Generate : MonoBehaviour
 							}
 						}
 					}
-					tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
-					tile.GetComponent<MeshCollider>().convex = true;
+					//tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
+					//tile.GetComponent<MeshCollider>().convex = true;
 				}
 			}
 		}
@@ -800,9 +793,9 @@ public class Generate : MonoBehaviour
 		samples.Add(bestCandidate);
 		GenerateBestCandidates(samples, s, depth - 1);
 	}
-	private void NonRecursiveGenerateBestCandidates(List<Vector3> samples, float s, int numberOfVertices)
+	private void NonRecursiveGenerateBestCandidates(List<Vector3> samples, float s)
 	{
-		while (samples.Count < numberOfVertices)
+		while (samples.Count < NumberOfPoints)
 		{
 			var candidates = new List<Vector3>();
 			for (var i = 0; i < NumberOfCandidates; ++i)
@@ -834,7 +827,7 @@ public class Generate : MonoBehaviour
 	{
 		if (!node.processed)
 		{
-			node.GetComponent<MeshRenderer>().material = replacement;
+			node.GetComponent<MeshRenderer>().sharedMaterial = replacement;
 			node.plate = plateNumber;
 			node.processed = true;
 		}
@@ -843,7 +836,7 @@ public class Generate : MonoBehaviour
 		{
 			if (!neighbor.processed)
 			{
-				neighbor.GetComponent<MeshRenderer>().material = replacement;
+				neighbor.GetComponent<MeshRenderer>().sharedMaterial = replacement;
 				neighbor.plate = plateNumber;
 				neighbor.processed = true;
 			}
@@ -931,6 +924,7 @@ public class Generate : MonoBehaviour
 
 		return tri;
 	}
+
 
 	//private GameObject topColdGizmo;
 	//private GameObject botColdGizmo;
@@ -1254,7 +1248,7 @@ public class Generate : MonoBehaviour
 	//        var thisTile = tile.GetComponent<VoronoiTile>() as VoronoiTile;
 	//        thisTile.Initialize(tileVerts, true);
 	//        tile.GetComponent<MeshFilter>().mesh = thisTile.tileMesh;
-	//        tile.GetComponent<MeshRenderer>().material = oceanMat;
+	//        tile.GetComponent<MeshRenderer>().sharedMaterial = oceanMat;
 	//        waterTiles.Add(thisTile);
 	//    }
 
@@ -1321,7 +1315,7 @@ public class Generate : MonoBehaviour
 	//    {
 	//        foreach (var tile in plate.tiles)
 	//        {
-	//            tile.GetComponent<MeshRenderer>().material = tempMat;
+	//            tile.GetComponent<MeshRenderer>().sharedMaterial = tempMat;
 	//        }
 	//    }
 	//}
@@ -1333,10 +1327,10 @@ public class Generate : MonoBehaviour
 	//    {
 	//        foreach (var tile in plate.tiles)
 	//        {
-	//            if (tile.temperature > 0.0f && tile.temperature <= 1f) tile.GetComponent<MeshRenderer>().material = temp0Mat;
-	//            else if (tile.temperature > 1f && tile.temperature <= 2f) tile.GetComponent<MeshRenderer>().material = temp1Mat;
-	//            else if (tile.temperature > 2f && tile.temperature <= 3f) tile.GetComponent<MeshRenderer>().material = temp2Mat;
-	//            else if (tile.temperature > 3f) tile.GetComponent<MeshRenderer>().material = temp3Mat;
+	//            if (tile.temperature > 0.0f && tile.temperature <= 1f) tile.GetComponent<MeshRenderer>().sharedMaterial = temp0Mat;
+	//            else if (tile.temperature > 1f && tile.temperature <= 2f) tile.GetComponent<MeshRenderer>().sharedMaterial = temp1Mat;
+	//            else if (tile.temperature > 2f && tile.temperature <= 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = temp2Mat;
+	//            else if (tile.temperature > 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = temp3Mat;
 	//        }
 	//    }
 	//}
@@ -1348,10 +1342,10 @@ public class Generate : MonoBehaviour
 	//    {
 	//        foreach (var tile in plate.tiles)
 	//        {
-	//            if (tile.humidity > -2.0f && tile.humidity <= 1f) tile.GetComponent<MeshRenderer>().material = hum0Mat;
-	//            else if (tile.humidity >1f && tile.humidity <= 2f) tile.GetComponent<MeshRenderer>().material = hum1Mat;
-	//            else if (tile.humidity > 2f && tile.humidity <= 3f) tile.GetComponent<MeshRenderer>().material = hum2Mat;
-	//            else if (tile.humidity > 3f && tile.humidity <= 4f) tile.GetComponent<MeshRenderer>().material = hum3Mat;
+	//            if (tile.humidity > -2.0f && tile.humidity <= 1f) tile.GetComponent<MeshRenderer>().sharedMaterial = hum0Mat;
+	//            else if (tile.humidity >1f && tile.humidity <= 2f) tile.GetComponent<MeshRenderer>().sharedMaterial = hum1Mat;
+	//            else if (tile.humidity > 2f && tile.humidity <= 3f) tile.GetComponent<MeshRenderer>().sharedMaterial = hum2Mat;
+	//            else if (tile.humidity > 3f && tile.humidity <= 4f) tile.GetComponent<MeshRenderer>().sharedMaterial = hum3Mat;
 	//        }
 	//    }
 	//}
@@ -1363,9 +1357,9 @@ public class Generate : MonoBehaviour
 	//    {
 	//        foreach (var tile in plate.tiles)
 	//        {
-	//            if (tile.altitude > 0.0f ) tile.GetComponent<MeshRenderer>().material = h0Mat;
-	//            if (tile.altitude > 0.02f) tile.GetComponent<MeshRenderer>().material = h1Mat;
-	//            if (tile.altitude > 0.04f) tile.GetComponent<MeshRenderer>().material = h2Mat;
+	//            if (tile.altitude > 0.0f ) tile.GetComponent<MeshRenderer>().sharedMaterial = h0Mat;
+	//            if (tile.altitude > 0.02f) tile.GetComponent<MeshRenderer>().sharedMaterial = h1Mat;
+	//            if (tile.altitude > 0.04f) tile.GetComponent<MeshRenderer>().sharedMaterial = h2Mat;
 	//        }
 	//    }
 	//}
@@ -1510,16 +1504,16 @@ public class Generate : MonoBehaviour
 	//        {
 	//            tile.DetermineBiome();
 	//            if(alsoWater) tile.DetermineBaseBiome();
-	//            if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().material = sandMat;
-	//            else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().material = glacierMat;
-	//            else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().material = plainMat;
-	//            else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().material = snowMat;
-	//            else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().material = jungleMat;
-	//            else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().material = desertMat;
-	//            else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().material = dirtMat;
-	//            else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().material = tundraMat;
-	//            else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().material = forestMat;
-	//            else tile.GetComponent<MeshRenderer>().material = tempMat;
+	//            if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().sharedMaterial = sandMat;
+	//            else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().sharedMaterial = glacierMat;
+	//            else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().sharedMaterial = plainMat;
+	//            else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().sharedMaterial = snowMat;
+	//            else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().sharedMaterial = jungleMat;
+	//            else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().sharedMaterial = desertMat;
+	//            else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().sharedMaterial = dirtMat;
+	//            else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().sharedMaterial = tundraMat;
+	//            else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().sharedMaterial = forestMat;
+	//            else tile.GetComponent<MeshRenderer>().sharedMaterial = tempMat;
 	//        }
 	//    }
 	//}
@@ -1531,24 +1525,24 @@ public class Generate : MonoBehaviour
 	//    {
 	//        foreach (var tile in plate.tiles)
 	//        {
-	//            if (tile.altitude > 0.02f) { tile.GetComponent<MeshRenderer>().material = hillMat;}
-	//            if (tile.altitude > 0.04f) { tile.GetComponent<MeshRenderer>().material = mountainMat; }
-	//            if (tile.altitude <= 0.00f) { tile.GetComponent<MeshRenderer>().material = sandMat;}
-	//            if (tile.altitude < -0.02f) tile.GetComponent<MeshRenderer>().material = sand2Mat;
-	//            if (tile.altitude < -0.04f) tile.GetComponent<MeshRenderer>().material = sand3Mat;
-	//            if (tile.altitude < -0.06f) tile.GetComponent<MeshRenderer>().material = sand4Mat;
-	//            if (tile.altitude < -0.14f) tile.GetComponent<MeshRenderer>().material = lavaMat;
+	//            if (tile.altitude > 0.02f) { tile.GetComponent<MeshRenderer>().sharedMaterial = hillMat;}
+	//            if (tile.altitude > 0.04f) { tile.GetComponent<MeshRenderer>().sharedMaterial = mountainMat; }
+	//            if (tile.altitude <= 0.00f) { tile.GetComponent<MeshRenderer>().sharedMaterial = sandMat;}
+	//            if (tile.altitude < -0.02f) tile.GetComponent<MeshRenderer>().sharedMaterial = sand2Mat;
+	//            if (tile.altitude < -0.04f) tile.GetComponent<MeshRenderer>().sharedMaterial = sand3Mat;
+	//            if (tile.altitude < -0.06f) tile.GetComponent<MeshRenderer>().sharedMaterial = sand4Mat;
+	//            if (tile.altitude < -0.14f) tile.GetComponent<MeshRenderer>().sharedMaterial = lavaMat;
 	//            if (Mathf.Approximately(tile.altitude, 0.02f))
 	//            {
-	//                if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().material = sandMat;
-	//                else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().material = glacierMat;
-	//                else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().material = plainMat;
-	//                else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().material = snowMat;
-	//                else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().material = jungleMat;
-	//                else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().material = desertMat;
-	//                else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().material = dirtMat;
-	//                else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().material = tundraMat;
-	//                else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().material = forestMat;
+	//                if (tile.biome == Biome.Sand) tile.GetComponent<MeshRenderer>().sharedMaterial = sandMat;
+	//                else if (tile.biome == Biome.Glacier) tile.GetComponent<MeshRenderer>().sharedMaterial = glacierMat;
+	//                else if (tile.biome == Biome.Plains) tile.GetComponent<MeshRenderer>().sharedMaterial = plainMat;
+	//                else if (tile.biome == Biome.Snow) tile.GetComponent<MeshRenderer>().sharedMaterial = snowMat;
+	//                else if (tile.biome == Biome.Jungle) tile.GetComponent<MeshRenderer>().sharedMaterial = jungleMat;
+	//                else if (tile.biome == Biome.Desert) tile.GetComponent<MeshRenderer>().sharedMaterial = desertMat;
+	//                else if (tile.biome == Biome.Dirt) tile.GetComponent<MeshRenderer>().sharedMaterial = dirtMat;
+	//                else if (tile.biome == Biome.Tundra) tile.GetComponent<MeshRenderer>().sharedMaterial = tundraMat;
+	//                else if (tile.biome == Biome.Forest) tile.GetComponent<MeshRenderer>().sharedMaterial = forestMat;
 	//            }
 	//            tile.GetComponent<MeshCollider>().sharedMesh = tile.tileMesh;
 	//            tile.GetComponent<MeshCollider>().convex = true;
@@ -1817,7 +1811,7 @@ public class Generate : MonoBehaviour
 	//{
 	//    if (node.processed == false)
 	//    {
-	//        node.GetComponent<MeshRenderer>().material = replacement;
+	//        node.GetComponent<MeshRenderer>().sharedMaterial = replacement;
 	//        node.plate = plateNumber;
 	//        node.processed = true;
 	//    }
@@ -1825,7 +1819,7 @@ public class Generate : MonoBehaviour
 	//    {
 	//        if (neighbor.processed == false)
 	//        {
-	//            neighbor.GetComponent<MeshRenderer>().material = replacement;
+	//            neighbor.GetComponent<MeshRenderer>().sharedMaterial = replacement;
 	//            neighbor.plate = plateNumber;
 	//            neighbor.processed = true;
 	//        }
@@ -1891,12 +1885,12 @@ public class Generate : MonoBehaviour
 	//    float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
 
 	//    topColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    topColdGizmo.GetComponent<MeshRenderer>().material = coldMat;
+	//    topColdGizmo.GetComponent<MeshRenderer>().sharedMaterial = coldMat;
 	//    topColdGizmo.transform.localScale = new Vector3(a*2+0.65f, 0.04f, a*2+0.65f);
 	//    topColdGizmo.transform.position = new Vector3(0,coldLat, 0);
 
 	//    botColdGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    botColdGizmo.GetComponent<MeshRenderer>().material = coldMat;
+	//    botColdGizmo.GetComponent<MeshRenderer>().sharedMaterial = coldMat;
 	//    botColdGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 	//    botColdGizmo.transform.position = new Vector3(0, -coldLat, 0);
 	//    seconds = 3f;
@@ -1914,12 +1908,12 @@ public class Generate : MonoBehaviour
 	//    float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
 
 	//    topTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    topTempGizmo.GetComponent<MeshRenderer>().material = temperateMat;
+	//    topTempGizmo.GetComponent<MeshRenderer>().sharedMaterial = temperateMat;
 	//    topTempGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
 	//    topTempGizmo.transform.position = new Vector3(0, tempLat, 0);
 
 	//    botTempGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    botTempGizmo.GetComponent<MeshRenderer>().material = temperateMat;
+	//    botTempGizmo.GetComponent<MeshRenderer>().sharedMaterial = temperateMat;
 	//    botTempGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 	//    botTempGizmo.transform.position = new Vector3(0, -tempLat, 0);
 	//    seconds = 3f;
@@ -1937,12 +1931,12 @@ public class Generate : MonoBehaviour
 	//    float a2 = Mathf.Sqrt(h2 * (2 * (float)size - h2));
 
 	//    topWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    topWarmGizmo.GetComponent<MeshRenderer>().material = warmMat;
+	//    topWarmGizmo.GetComponent<MeshRenderer>().sharedMaterial = warmMat;
 	//    topWarmGizmo.transform.localScale = new Vector3(a * 2 + 0.65f, 0.04f, a * 2 + 0.65f);
 	//    topWarmGizmo.transform.position = new Vector3(0, warmLat, 0);
 
 	//    botWarmGizmo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-	//    botWarmGizmo.GetComponent<MeshRenderer>().material = warmMat;
+	//    botWarmGizmo.GetComponent<MeshRenderer>().sharedMaterial = warmMat;
 	//    botWarmGizmo.transform.localScale = new Vector3(a2 * 2 + 0.65f, 0.04f, a2 * 2 + 0.65f);
 	//    botWarmGizmo.transform.position = new Vector3(0, -warmLat, 0);
 	//    seconds = 3f;
