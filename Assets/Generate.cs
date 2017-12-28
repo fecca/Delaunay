@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Assets;
@@ -9,12 +8,23 @@ using Random = UnityEngine.Random;
 
 public class Generate : MonoBehaviour
 {
-	public int Size = 5;
-	public int NumberOfPoints = 200;
-	public int NumberOfCandidates = 10;
-	public int Plates = 30;
-	public int Seed = 0;
-	public Materials Materials = new Materials();
+	[Range(2, 6)]
+	[SerializeField]
+	private int Size = 5;
+	[Range(10, 1000)]
+	[SerializeField]
+	private int NumberOfPoints = 200;
+	[Range(5, 100)]
+	[SerializeField]
+	private int NumberOfCandidates = 10;
+	[Range(1, 200)]
+	[SerializeField]
+	private int Plates = 30;
+	[Range(0, int.MaxValue)]
+	[SerializeField]
+	private int Seed = 0;
+	[SerializeField]
+	private Materials Materials = new Materials();
 
 	private List<Vector3> m_waterVerts;
 	private List<Vector3> m_landVerts;
