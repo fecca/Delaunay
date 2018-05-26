@@ -217,6 +217,7 @@ namespace Assets
 
 		public void Push(float value)
 		{
+			value = 0f;
 			Vector3[] verts = tileMesh.vertices;
 			for (int q = 0; q < verts.Length; ++q)
 			{
